@@ -90,7 +90,13 @@ const NearbyHospitals = () => {
   useEffect(() => {
     // Initialize Google Maps services
     directionsService.current = new google.maps.DirectionsService();
-    directionsRenderer.current = new google.maps.DirectionsRenderer();
+    directionsRenderer.current = new google.maps.DirectionsRenderer({
+      suppressMarkers: false,
+      polylineOptions: {
+        strokeColor: '#0066cc',
+        strokeWeight: 5
+      }
+    });
 
     // Get current location
     if (navigator.geolocation) {
@@ -206,32 +212,79 @@ const NearbyHospitals = () => {
     setSelectedHospital(hospital);
     setShowDirections(true);
 
-    if (mapRef.current) {
-      if (!mapInstance.current) {
-        mapInstance.current = new google.maps.Map(mapRef.current, {
-          center: currentLocation,
-          zoom: 14
+    // Wait for the next render to ensure the map container is available
+    setTimeout(() => {
+      if (mapRef.current) {
+        // Initialize map if not already done
+        if (!mapInstance.current) {
+          mapInstance.current = new google.maps.Map(mapRef.current, {
+            center: currentLocation,
+            zoom: 14,
+            mapTypeControl: true,
+            streetViewControl: true,
+            fullscreenControl: true,
+            zoomControl: true
+          });
+        }
+
+        // Set the map for the directions renderer
+        if (directionsRenderer.current) {
+          directionsRenderer.current.setMap(mapInstance.current);
+        }
+
+        // Create markers for start and end points
+        const startMarker = new google.maps.Marker({
+          position: currentLocation,
+          map: mapInstance.current,
+          title: "Your Location",
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#0066cc",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "#ffffff"
+          }
+        });
+
+        const endMarker = new google.maps.Marker({
+          position: hospital.location,
+          map: mapInstance.current,
+          title: hospital.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#ff0000",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "#ffffff"
+          }
+        });
+
+        // Calculate and display route
+        const request = {
+          origin: new google.maps.LatLng(currentLocation.lat, currentLocation.lng),
+          destination: new google.maps.LatLng(hospital.location.lat, hospital.location.lng),
+          travelMode: google.maps.TravelMode.DRIVING
+        };
+
+        directionsService.current?.route(request, (result, status) => {
+          if (status === google.maps.DirectionsStatus.OK && result) {
+            directionsRenderer.current?.setDirections(result);
+            
+            // Fit the map to show the entire route
+            const bounds = new google.maps.LatLngBounds();
+            result.routes[0].legs[0].steps.forEach(step => {
+              bounds.extend(step.start_location);
+              bounds.extend(step.end_location);
+            });
+            mapInstance.current?.fitBounds(bounds);
+          } else {
+            toast.error("Could not calculate directions. Please try again.");
+          }
         });
       }
-
-      if (directionsRenderer.current) {
-        directionsRenderer.current.setMap(mapInstance.current);
-      }
-
-      const request = {
-        origin: new google.maps.LatLng(currentLocation.lat, currentLocation.lng),
-        destination: new google.maps.LatLng(hospital.location.lat, hospital.location.lng),
-        travelMode: google.maps.TravelMode.DRIVING
-      };
-
-      directionsService.current?.route(request, (result, status) => {
-        if (status === google.maps.DirectionsStatus.OK && result) {
-          directionsRenderer.current?.setDirections(result);
-        } else {
-          toast.error("Could not calculate directions. Please try again.");
-        }
-      });
-    }
+    }, 0);
   };
 
   const closeDirections = () => {
@@ -239,6 +292,9 @@ const NearbyHospitals = () => {
     setSelectedHospital(null);
     if (directionsRenderer.current) {
       directionsRenderer.current.setMap(null);
+    }
+    if (mapInstance.current) {
+      mapInstance.current = null;
     }
   };
 
