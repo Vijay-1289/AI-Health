@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +11,6 @@ import DoctorsPage from "./pages/DoctorsPage";
 import BookAppointmentPage from "./pages/BookAppointmentPage";
 import AiNursePage from "./pages/AiNursePage";
 import NotFound from "./pages/NotFound";
-import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import NearbyHospitalsPage from "./pages/NearbyHospitalsPage";
 
@@ -26,7 +24,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -38,26 +36,28 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         setLoading(false);
       }
     };
-    
+
     getUser();
   }, []);
-  
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin h-8 w-8 border-4 border-healSmart-blue border-t-transparent rounded-full"></div>
-    </div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-healSmart-blue border-t-transparent rounded-full"></div>
+      </div>
+    );
   }
-  
+
   if (!user) {
     return <Navigate to="/signin" />;
   }
-  
+
   return children;
 };
 
 const App = () => {
   const [isLoaded, setIsLoaded] = useState(false);
-  
+
   useEffect(() => {
     // This ensures that client-side auth check is done after hydration
     setIsLoaded(true);
@@ -75,27 +75,38 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/doctors" element={
-              <ProtectedRoute>
-                <DoctorsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/book-appointment/:doctorId" element={
-              <ProtectedRoute>
-                <BookAppointmentPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/ai-nurse" element={
-              <ProtectedRoute>
-                <AiNursePage />
-              </ProtectedRoute>
-            } />
-            <Route path="/nearby-hospitals" element={
-              <ProtectedRoute>
-                <NearbyHospitalsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/signin" element={<SignInPage />} />
+            <Route
+              path="/doctors"
+              element={
+                <ProtectedRoute>
+                  <DoctorsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/book-appointment/:doctorId"
+              element={
+                <ProtectedRoute>
+                  <BookAppointmentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ai-nurse"
+              element={
+                <ProtectedRoute>
+                  <AiNursePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/nearby-hospitals"
+              element={
+                <ProtectedRoute>
+                  <NearbyHospitalsPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/signup" element={<SignUpPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
