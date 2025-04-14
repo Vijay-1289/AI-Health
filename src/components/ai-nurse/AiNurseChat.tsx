@@ -16,7 +16,7 @@ interface Message {
 const AiNurseChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      content: "Hello! I'm your AI health assistant. How can I help you today? You can ask me about medications, symptoms, prevention tips, or general health advice.",
+      content: "Hello! I'm your AI health assistant. How can I help you today? You can ask me about medications, symptoms, or get treatment suggestions for common ailments.",
       isUser: false,
       timestamp: new Date(),
     },
@@ -30,8 +30,8 @@ const AiNurseChat = () => {
 
   // Check if speech recognition is available
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
@@ -122,25 +122,47 @@ const AiNurseChat = () => {
   };
 
   const fetchGeminiResponse = async (query: string) => {
-    // This is a simplified example - in a real app, you would make a proper API call
-    // to Gemini API using the provided API key: AIzaSyAff7A4dBVrLDuKnOYbaWLKXt1MFgLWUbQ
+    // This is a simplified simulation for common medical conditions and medications
+    // In a real implementation, we would call the Gemini API using the provided key
     
-    // For now, we'll simulate a response
-    const healthResponses = [
-      "Based on your symptoms, it could be a common cold. Rest, stay hydrated, and take over-the-counter pain relievers if needed. If symptoms worsen, please consult a doctor.",
-      "It's important to maintain a balanced diet rich in fruits, vegetables, and whole grains to support your immune system.",
-      "Regular exercise is key to maintaining good health. Aim for at least 150 minutes of moderate activity per week.",
-      "Make sure to take your medication as prescribed by your doctor. Do not adjust dosages without medical supervision.",
-      "Those symptoms could indicate several conditions. I recommend consulting with one of our doctors in Vijayawada or Eluru for a proper diagnosis.",
-      "Prevention is better than cure. Regular handwashing, staying up-to-date with vaccinations, and avoiding close contact with sick individuals can help prevent many illnesses.",
-      "For that condition, I recommend rest and applying a cold compress to the affected area. If pain persists for more than a few days, please consult a healthcare provider."
+    // Sample responses prioritizing medication suggestions over doctor consultations
+    const medicationResponses: Record<string, string> = {
+      'fever': "For fever, you can take acetaminophen (Tylenol) or ibuprofen (Advil, Motrin) as directed on packaging. Adults typically take 325-650mg every 4-6 hours of acetaminophen, not exceeding 3000mg daily. Stay hydrated and rest. If fever persists for more than 3 days or exceeds 103°F (39.4°C), visit a nearby hospital.",
+      'headache': "For headaches, try ibuprofen (Advil) 200-400mg or acetaminophen (Tylenol) 500mg every 4-6 hours as needed. Ensure you're hydrated and consider resting in a dark, quiet room. If headaches are severe or persistent, Apollo Hospital in Vijayawada provides specialized care.",
+      'cough': "For a dry cough, try dextromethorphan (Robitussin DM) 10-20mg every 4 hours, not exceeding 120mg daily. For productive cough, guaifenesin (Mucinex) 200-400mg every 4 hours can help. Stay hydrated and use honey with warm water. Take these medications for 5-7 days. If symptoms worsen, visit Kamineni Hospital in Vijayawada.",
+      'cold': "For common cold symptoms, take acetaminophen (Tylenol) 500mg every 6 hours for pain/fever, pseudoephedrine (Sudafed) 60mg every 4-6 hours for congestion, and diphenhydramine (Benadryl) 25mg every 6 hours for runny nose. Use these medications for 3-5 days while resting and staying hydrated.",
+      'sore throat': "For a sore throat, try acetaminophen (Tylenol) 500mg or ibuprofen (Advil) 400mg every 6 hours. Gargle with warm salt water (1/4 tsp salt in 8oz water) every 2-3 hours. Throat lozenges with benzocaine can provide temporary relief. Continue treatment for 3-5 days.",
+      'allergies': "For allergies, take cetirizine (Zyrtec) 10mg or loratadine (Claritin) 10mg once daily. For severe symptoms, fexofenadine (Allegra) 180mg once daily may be more effective. Avoid known allergens and continue medication for as long as exposed to allergens.",
+    };
+    
+    // Default medication responses for unknown conditions
+    const defaultResponses = [
+      "Based on your symptoms, you could try acetaminophen (Tylenol) 500mg every 6 hours for pain and fever. Stay hydrated and rest. If symptoms persist for more than 3 days, consider visiting Krishna Institute of Medical Sciences in Vijayawada.",
+      "For those symptoms, ibuprofen (Advil) 400mg every 6 hours with food may help reduce inflammation and discomfort. Use for 3-5 days. If not improving, Andhra Hospitals in Vijayawada offers excellent care.",
+      "You might benefit from diphenhydramine (Benadryl) 25mg every 6 hours for those symptoms. Stay hydrated and get plenty of rest. Use for 2-3 days and if not improving, consider visiting NRI General Hospital in Guntur.",
+      "Try loratadine (Claritin) 10mg once daily for your symptoms. This antihistamine can help with those issues for 24 hours. If symptoms persist for more than a week, Manipal Hospital in Vijayawada is recommended."
     ];
+    
+    // Try to match query with known conditions
+    const lowercaseQuery = query.toLowerCase();
+    let response = '';
+    
+    for (const [condition, medication] of Object.entries(medicationResponses)) {
+      if (lowercaseQuery.includes(condition)) {
+        response = medication;
+        break;
+      }
+    }
+    
+    // If no match found, use a default response
+    if (!response) {
+      response = defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+    }
     
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Return a relevant health response
-    return healthResponses[Math.floor(Math.random() * healthResponses.length)];
+    return response;
   };
 
   const speakResponse = (text: string) => {
@@ -157,11 +179,30 @@ const AiNurseChat = () => {
     }
   };
 
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+      toast.info("Listening... Speak now!");
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
     <div className="flex flex-col h-[600px] rounded-lg shadow-sm overflow-hidden bg-white">
       <div className="bg-healSmart-blue text-white p-4">
         <h3 className="text-xl font-semibold">AI Health Assistant</h3>
-        <p className="text-sm text-blue-100">Ask any health-related questions or concerns</p>
+        <p className="text-sm text-blue-100">Ask about symptoms for medication recommendations</p>
       </div>
       
       <ScrollArea className="flex-grow p-4">
@@ -203,7 +244,7 @@ const AiNurseChat = () => {
               </Button>
             )}
             <Input
-              placeholder="Type your health question here..."
+              placeholder="Describe your symptoms for medication suggestions..."
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyPress}
@@ -219,7 +260,7 @@ const AiNurseChat = () => {
             </Button>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Ask about symptoms, medications, preventive measures, or general health advice.
+            Ask about symptoms to get medication recommendations and dosage information.
           </p>
         </CardContent>
       </Card>
