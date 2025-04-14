@@ -237,196 +237,178 @@ const NearbyHospitals = () => {
     }
   };
 
-  const getDirections = (hospital: HospitalInfo) => {
-    if (!currentLocation || !hospital.location) {
-      toast.error("Location information is not available.");
-      return;
-    }
+  const initializeMap = (center: { lat: number; lng: number }) => {
+    if (!mapRef.current) return;
 
-    if (!window.google || !window.google.maps) {
-      toast.error("Google Maps service is not available. Please try again later.");
-      return;
-    }
-
-    setSelectedHospital(hospital);
-    setShowDirections(true);
-    setIsMapLoading(true);
-
-    // Wait for the next render to ensure the map container is available
-    setTimeout(() => {
-      if (mapRef.current) {
-        try {
-          // Initialize map if not already done
-          if (!mapInstance.current) {
-            mapInstance.current = new google.maps.Map(mapRef.current, {
-              center: currentLocation,
-              zoom: 14,
-              mapTypeControl: true,
-              streetViewControl: true,
-              fullscreenControl: true,
-              zoomControl: true
-            });
+    try {
+      mapInstance.current = new google.maps.Map(mapRef.current, {
+        center,
+        zoom: 13,
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
           }
+        ]
+      });
 
-          // Set the map for the directions renderer
-          if (directionsRenderer.current) {
-            directionsRenderer.current.setMap(mapInstance.current);
-          }
-
-          // Create markers for start and end points
-          const startMarker = new google.maps.Marker({
-            position: currentLocation,
-            map: mapInstance.current,
-            title: "Your Location",
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: "#0066cc",
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: "#ffffff"
-            }
-          });
-
-          const endMarker = new google.maps.Marker({
-            position: hospital.location,
-            map: mapInstance.current,
-            title: hospital.name,
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: "#ff0000",
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: "#ffffff"
-            }
-          });
-
-          // Calculate and display route
-          const request = {
-            origin: new google.maps.LatLng(currentLocation.lat, currentLocation.lng),
-            destination: new google.maps.LatLng(hospital.location.lat, hospital.location.lng),
-            travelMode: google.maps.TravelMode.DRIVING
-          };
-
-          directionsService.current?.route(request, (result, status) => {
-            setIsMapLoading(false);
-            if (status === google.maps.DirectionsStatus.OK && result) {
-              directionsRenderer.current?.setDirections(result);
-              
-              // Fit the map to show the entire route
-              const bounds = new google.maps.LatLngBounds();
-              result.routes[0].legs[0].steps.forEach(step => {
-                bounds.extend(step.start_location);
-                bounds.extend(step.end_location);
-              });
-              mapInstance.current?.fitBounds(bounds);
-            } else {
-              console.error('Directions service error:', status);
-              toast.error("Could not calculate directions. Please try again later.");
-            }
-          });
-        } catch (error) {
-          console.error('Error initializing map:', error);
-          setIsMapLoading(false);
-          toast.error("Error initializing map. Please try again later.");
+      // Add current location marker
+      new google.maps.Marker({
+        position: center,
+        map: mapInstance.current,
+        title: "Your Location",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#4285F4",
+          fillOpacity: 1,
+          strokeColor: "#FFFFFF",
+          strokeWeight: 2
         }
-      }
-    }, 0);
-  };
+      });
 
-  const closeDirections = () => {
-    setShowDirections(false);
-    setSelectedHospital(null);
-    setIsMapLoading(false);
-    if (directionsRenderer.current) {
-      directionsRenderer.current.setMap(null);
-    }
-    if (mapInstance.current) {
-      mapInstance.current = null;
+      // Add hospital markers
+      nearbyHospitals.forEach(hospital => {
+        const marker = new google.maps.Marker({
+          position: { lat: hospital.location?.lat || 0, lng: hospital.location?.lng || 0 },
+          map: mapInstance.current,
+          title: hospital.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: "#EA4335",
+            fillOpacity: 1,
+            strokeColor: "#FFFFFF",
+            strokeWeight: 2
+          }
+        });
+
+        marker.addListener('click', () => {
+          setSelectedHospital(hospital);
+        });
+      });
+
+      setIsMapLoading(false);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      toast.error('Failed to initialize map. Please try again later.');
+      setIsMapLoading(false);
     }
   };
 
   return (
-    <div>
-      <Card className="shadow-sm mb-6">
-        <CardHeader className="bg-healSmart-blue text-white">
-          <CardTitle className="flex items-center gap-2">
-            <Hospital className="h-5 w-5" /> Nearby Hospitals
-          </CardTitle>
-          <CardDescription className="text-blue-100">
-            Hospitals near your location in Vijayawada
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-healSmart-blue border-t-transparent rounded-full"></div>
-            </div>
-          ) : nearbyHospitals.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600">No hospitals found nearby. Please try again later.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {nearbyHospitals.map((hospital) => (
-                <div key={hospital.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{hospital.name}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{hospital.address}</p>
-                      <p className="text-sm text-gray-500 mt-1">☎️ {hospital.phone}</p>
-                    </div>
-                    {hospital.distance && (
-                      <span className="text-sm font-medium text-healSmart-blue">
-                        {hospital.distance}
-                      </span>
-                    )}
-                  </div>
-                  <Button 
-                    onClick={() => getDirections(hospital)} 
-                    className="mt-3 bg-healSmart-green hover:bg-green-600 w-full"
-                  >
-                    <Navigation className="h-4 w-4 mr-2" /> Get Directions
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {showDirections && selectedHospital && (
-        <Card className="shadow-md">
-          <CardHeader className="bg-healSmart-green text-white flex flex-row items-center justify-between">
-            <div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Hospitals List */}
+        <div className="w-full lg:w-1/2">
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" /> Directions to {selectedHospital.name}
+                <Hospital className="h-5 w-5" />
+                Nearby Hospitals
               </CardTitle>
-              <CardDescription className="text-green-100">
-                {selectedHospital.address}
+              <CardDescription>
+                {currentLocation ? (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>Showing hospitals near your location</span>
+                  </div>
+                ) : (
+                  "Loading your location..."
+                )}
               </CardDescription>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-green-600"
-              onClick={closeDirections}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </CardHeader>
-          <CardContent className="p-4">
-            {isMapLoading ? (
-              <div className="flex justify-center items-center h-96">
-                <div className="animate-spin h-8 w-8 border-4 border-healSmart-green border-t-transparent rounded-full"></div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : nearbyHospitals.length > 0 ? (
+                <div className="space-y-4">
+                  {nearbyHospitals.map((hospital) => (
+                    <div
+                      key={hospital.id}
+                      className={`p-4 rounded-lg border ${
+                        selectedHospital?.id === hospital.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{hospital.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {hospital.address}
+                          </p>
+                          {hospital.distance && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {hospital.distance} away
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedHospital(hospital);
+                            setShowDirections(true);
+                          }}
+                        >
+                          <Navigation className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    No hospitals found nearby. Try adjusting your location or search radius.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Map Popup */}
+        {showDirections && selectedHospital && (
+          <div className="fixed right-0 top-0 h-screen w-full lg:w-1/2 bg-background shadow-lg z-50">
+            <div className="h-full flex flex-col">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="font-semibold">Directions to {selectedHospital.name}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowDirections(false);
+                    setSelectedHospital(null);
+                    if (directionsRenderer.current) {
+                      directionsRenderer.current.setMap(null);
+                    }
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            ) : (
-              <div ref={mapRef} className="w-full h-96 rounded-lg"></div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              <div className="flex-1 relative">
+                {isMapLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <div
+                    ref={mapRef}
+                    className="w-full h-full"
+                    style={{ minHeight: "400px" }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
