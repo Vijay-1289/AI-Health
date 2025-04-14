@@ -1,28 +1,9 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Navbar from '@/components/Navbar';
 import NearbyHospitals from '@/components/hospitals/NearbyHospitals';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Navigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 const NearbyHospitalsPage = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    // Check if user is logged in
-    const user = localStorage.getItem('user');
-    if (user) {
-      setIsLoggedIn(true);
-    } else {
-      toast.error("Please sign in to access this feature");
-    }
-  }, []);
-
-  if (!isLoggedIn) {
-    return <Navigate to="/signin" />;
-  }
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
