@@ -11,7 +11,6 @@ import DoctorsPage from "./pages/DoctorsPage";
 import BookAppointmentPage from "./pages/BookAppointmentPage";
 import AiNursePage from "./pages/AiNursePage";
 import NotFound from "./pages/NotFound";
-import SignUpPage from "./pages/SignUpPage";
 import NearbyHospitalsPage from "./pages/NearbyHospitalsPage";
 
 const queryClient = new QueryClient();
@@ -107,7 +106,6 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/signup" element={<SignUpPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
