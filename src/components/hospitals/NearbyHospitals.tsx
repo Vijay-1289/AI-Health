@@ -241,9 +241,18 @@ const NearbyHospitals = () => {
     if (!mapRef.current) return;
 
     try {
+      // Ensure the map container has a defined height
+      mapRef.current.style.height = '100%';
+      mapRef.current.style.width = '100%';
+      mapRef.current.style.minHeight = '400px';
+
       mapInstance.current = new google.maps.Map(mapRef.current, {
         center,
         zoom: 13,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true,
+        zoomControl: true,
         styles: [
           {
             featureType: "poi",
@@ -392,7 +401,7 @@ const NearbyHospitals = () => {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex-1 relative">
+              <div className="flex-1 relative" style={{ height: 'calc(100vh - 64px)' }}>
                 {isMapLoading ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -401,7 +410,7 @@ const NearbyHospitals = () => {
                   <div
                     ref={mapRef}
                     className="w-full h-full"
-                    style={{ minHeight: "400px" }}
+                    style={{ height: '100%', minHeight: '400px' }}
                   />
                 )}
               </div>
