@@ -306,6 +306,21 @@ const NearbyHospitals = () => {
     }
   };
 
+  const handleGetDirections = (hospital: HospitalInfo) => {
+    if (!currentLocation || !hospital.location) {
+      toast.error("Location information is not available.");
+      return;
+    }
+
+    // Construct Google Maps URL with directions
+    const origin = `${currentLocation.lat},${currentLocation.lng}`;
+    const destination = `${hospital.location.lat},${hospital.location.lng}`;
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+
+    // Open Google Maps in a new tab
+    window.open(mapsUrl, '_blank');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col lg:flex-row gap-6">
@@ -359,10 +374,7 @@ const NearbyHospitals = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            setSelectedHospital(hospital);
-                            setShowDirections(true);
-                          }}
+                          onClick={() => handleGetDirections(hospital)}
                         >
                           <Navigation className="h-4 w-4" />
                         </Button>
