@@ -45,8 +45,8 @@ const BookAppointmentPage = () => {
     setSelectedSlot(slot);
   };
 
-  const handleBookAppointment = () => {
-    if (!selectedDate || !selectedSlot) {
+  const handleBookAppointment = (date: Date, time: string) => {
+    if (!date || !time) {
       toast.error('Please select a date and time slot');
       return;
     }
@@ -129,40 +129,15 @@ const BookAppointmentPage = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <AppointmentCalendar 
+                    doctorId={doctor.id}
+                    doctorName={doctor.name}
+                    specialty={doctor.specialty}
+                    onAppointmentBooked={handleBookAppointment}
                     onDateSelect={handleDateSelect}
                     onSlotSelect={handleSlotSelect}
                     selectedDate={selectedDate}
                     selectedSlot={selectedSlot}
                   />
-                  
-                  <div className="mt-6">
-                    <Button
-                      onClick={handleBookAppointment}
-                      disabled={!selectedDate || !selectedSlot || isBooking}
-                      className="w-full bg-healSmart-blue hover:bg-blue-700"
-                    >
-                      {isBooking ? (
-                        <>
-                          <div className="h-4 w-4 border-t-2 border-r-2 border-white rounded-full animate-spin mr-2"></div>
-                          Booking...
-                        </>
-                      ) : (
-                        'Confirm Appointment'
-                      )}
-                    </Button>
-                    
-                    {!selectedDate && (
-                      <p className="text-sm text-gray-500 text-center mt-2">
-                        Please select a date to view available time slots
-                      </p>
-                    )}
-                    
-                    {selectedDate && !selectedSlot && (
-                      <p className="text-sm text-gray-500 text-center mt-2">
-                        Please select a time slot to continue
-                      </p>
-                    )}
-                  </div>
                 </CardContent>
               </Card>
             </div>
