@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 import Index from "./pages/Index";
 import DoctorsPage from "./pages/DoctorsPage";
 import BookAppointmentPage from "./pages/BookAppointmentPage";
@@ -17,10 +19,36 @@ import NearbyHospitalsPage from "./pages/NearbyHospitalsPage";
 const queryClient = new QueryClient();
 
 // Protected route component
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const isAuthenticated = localStorage.getItem('user') !== null;
+interface ProtectedRouteProps {
+  children: JSX.Element;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  if (!isAuthenticated) {
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
+      } catch (error) {
+        console.error("Error getting user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getUser();
+  }, []);
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin h-8 w-8 border-4 border-healSmart-blue border-t-transparent rounded-full"></div>
+    </div>;
+  }
+  
+  if (!user) {
     return <Navigate to="/signin" />;
   }
   

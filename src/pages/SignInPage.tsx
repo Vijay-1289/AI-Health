@@ -1,49 +1,71 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const SignInPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check current auth status on component mount
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate('/');
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // In a real app, we would authenticate with a backend
-    // For now, we'll simulate a successful login
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      // Check for demo credentials
-      if (email === 'demo@example.com' && password === 'password') {
-        localStorage.setItem('user', JSON.stringify({ email, name: 'Demo User' }));
-        toast.success('Successfully signed in!');
-        navigate('/');
-      } else {
-        toast.error('Invalid credentials. Try demo@example.com / password');
-      }
-    } catch (error) {
-      toast.error('Failed to sign in. Please try again.');
+      if (error) throw error;
+      
+      toast.success('Successfully signed in!');
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sign in. Please try again.');
       console.error('Sign in error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = () => {
-    // In a real app, we would use Google OAuth
-    // For now, we'll just show a toast message
-    toast.info('Google Sign In would be implemented with the provided Client ID', {
-      description: 'Using: 246049626035-uhst0uqgq7p7nt84f6idr1171nif77b8.apps.googleusercontent.com'
-    });
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+      
+      // No need for success toast here as we're redirecting to Google
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sign in with Google. Please try again.');
+      console.error('Google sign in error:', error);
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -116,14 +138,24 @@ const SignInPage = () => {
             variant="outline" 
             className="w-full" 
             onClick={handleGoogleSignIn}
+            disabled={googleLoading}
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 mr-2" aria-hidden="true">
-              <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z" fill="#EA4335" />
-              <path d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z" fill="#4285F4" />
-              <path d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z" fill="#FBBC05" />
-              <path d="M12.0004 24C15.2404 24 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.25 12.0004 19.25C8.8704 19.25 6.21535 17.14 5.2654 14.295L1.27539 17.39C3.25539 21.31 7.3104 24 12.0004 24Z" fill="#34A853" />
-            </svg>
-            Sign in with Google
+            {googleLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="h-4 w-4 border-t-2 border-r-2 border-gray-500 rounded-full animate-spin mr-2"></div>
+                Connecting to Google...
+              </div>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" className="h-5 w-5 mr-2" aria-hidden="true">
+                  <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z" fill="#EA4335" />
+                  <path d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z" fill="#4285F4" />
+                  <path d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z" fill="#FBBC05" />
+                  <path d="M12.0004 24C15.2404 24 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.25 12.0004 19.25C8.8704 19.25 6.21535 17.14 5.2654 14.295L1.27539 17.39C3.25539 21.31 7.3104 24 12.0004 24Z" fill="#34A853" />
+                </svg>
+                Sign in with Google
+              </>
+            )}
           </Button>
         </CardContent>
         <CardFooter className="flex justify-center">

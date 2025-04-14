@@ -4,11 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface User {
-  name: string;
-  email: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,15 +14,22 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
-    }
+    // Check if user is logged in with Supabase
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+
+    getUser();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -33,11 +37,18 @@ const Navbar = () => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    toast.success('Successfully logged out');
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      setUser(null);
+      toast.success('Successfully logged out');
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to log out. Please try again.');
+    }
   };
 
   return (
@@ -96,7 +107,7 @@ const Navbar = () => {
             
             {user ? (
               <div className="flex items-center ml-4">
-                <span className="text-sm text-gray-700 mr-2">Hello, {user.name}</span>
+                <span className="text-sm text-gray-700 mr-2">Hello, {user.user_metadata.full_name || user.email}</span>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -182,7 +193,7 @@ const Navbar = () => {
             
             {user ? (
               <div className="px-3 py-2">
-                <p className="text-sm text-gray-700 mb-2">Hello, {user.name}</p>
+                <p className="text-sm text-gray-700 mb-2">Hello, {user.user_metadata.full_name || user.email}</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
