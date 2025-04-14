@@ -1,10 +1,9 @@
 
 import React from 'react';
+import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/home/HeroSection';
 import FeaturesSection from '@/components/home/FeaturesSection';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 const Index = () => {
   return (
@@ -15,7 +14,6 @@ const Index = () => {
         <FeaturesSection />
         <TestimonialsSection />
       </main>
-      <Footer />
     </div>
   );
 };

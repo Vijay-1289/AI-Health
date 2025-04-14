@@ -1,10 +1,8 @@
 
 import React from 'react';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import AiNurseChat from '@/components/ai-nurse/AiNurseChat';
 import HealthTipsCard from '@/components/ai-nurse/HealthTipsCard';
-import NearbyHospitals from '@/components/hospitals/NearbyHospitals';
 import { Headphones } from 'lucide-react';
 
 const AiNursePage = () => {
@@ -30,12 +28,10 @@ const AiNursePage = () => {
             </div>
             <div className="space-y-8">
               <HealthTipsCard />
-              <NearbyHospitals />
             </div>
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

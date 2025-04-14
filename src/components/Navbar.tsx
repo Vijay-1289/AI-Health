@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface User {
@@ -14,6 +14,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is logged in
@@ -36,6 +37,7 @@ const Navbar = () => {
     localStorage.removeItem('user');
     setUser(null);
     toast.success('Successfully logged out');
+    navigate('/');
   };
 
   return (
@@ -79,6 +81,17 @@ const Navbar = () => {
               }`}
             >
               AI Health Assistant
+            </Link>
+            <Link
+              to="/nearby-hospitals"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${
+                location.pathname === '/nearby-hospitals'
+                  ? 'text-healSmart-blue'
+                  : 'text-gray-600 hover:text-healSmart-blue'
+              }`}
+            >
+              <MapPin className="h-4 w-4 inline mr-1" />
+              Nearby Hospitals
             </Link>
             
             {user ? (
@@ -154,6 +167,17 @@ const Navbar = () => {
               }`}
             >
               AI Health Assistant
+            </Link>
+            <Link
+              to="/nearby-hospitals"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname === '/nearby-hospitals'
+                  ? 'text-healSmart-blue bg-blue-50'
+                  : 'text-gray-600 hover:text-healSmart-blue hover:bg-blue-50'
+              }`}
+            >
+              <MapPin className="h-4 w-4 inline mr-1" />
+              Nearby Hospitals
             </Link>
             
             {user ? (
