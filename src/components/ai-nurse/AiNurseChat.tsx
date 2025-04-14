@@ -179,25 +179,6 @@ const AiNurseChat = () => {
     }
   };
 
-  const toggleListening = () => {
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      recognitionRef.current.start();
-      setIsListening(true);
-      toast.info("Listening... Speak now!");
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
   return (
     <div className="flex flex-col h-[600px] rounded-lg shadow-sm overflow-hidden bg-white">
       <div className="bg-healSmart-blue text-white p-4">
