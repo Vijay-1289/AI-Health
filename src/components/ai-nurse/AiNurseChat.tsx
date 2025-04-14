@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +26,7 @@ const AiNurseChat = () => {
   const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Check if speech recognition is available
   useEffect(() => {
@@ -54,9 +54,13 @@ const AiNurseChat = () => {
       };
     }
 
+    // Cleanup function to stop speech recognition and synthesis when component unmounts
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
+      }
+      if (speechSynthesisRef.current) {
+        window.speechSynthesis.cancel();
       }
     };
   }, []);
@@ -167,9 +171,24 @@ const AiNurseChat = () => {
 
   const speakResponse = (text: string) => {
     if ('speechSynthesis' in window) {
-      const speech = new SpeechSynthesisUtterance(text);
-      speech.lang = 'en-US';
-      window.speechSynthesis.speak(speech);
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      // Create new speech synthesis
+      speechSynthesisRef.current = new SpeechSynthesisUtterance(text);
+      speechSynthesisRef.current.lang = 'en-US';
+      
+      // Add event listeners
+      speechSynthesisRef.current.onend = () => {
+        speechSynthesisRef.current = null;
+      };
+      
+      speechSynthesisRef.current.onerror = (error) => {
+        console.error('Speech synthesis error:', error);
+        speechSynthesisRef.current = null;
+      };
+      
+      window.speechSynthesis.speak(speechSynthesisRef.current);
     }
   };
 
@@ -211,40 +230,38 @@ const AiNurseChat = () => {
         </div>
       </ScrollArea>
       
-      <Card className="border-t rounded-none">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2">
-            {hasSpeechRecognition && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={toggleListening}
-                className={isListening ? "bg-red-100 text-red-500" : ""}
-              >
-                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-              </Button>
-            )}
-            <Input
-              placeholder="Describe your symptoms for medication suggestions..."
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyPress}
-              disabled={isLoading}
-              className="flex-grow"
-            />
-            <Button 
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isLoading}
-              className="bg-healSmart-blue hover:bg-blue-700"
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2">
+          {hasSpeechRecognition && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleListening}
+              className={isListening ? "bg-red-100 text-red-500" : ""}
             >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send size={18} />}
+              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
             </Button>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Ask about symptoms to get medication recommendations and dosage information.
-          </p>
-        </CardContent>
-      </Card>
+          )}
+          <Input
+            placeholder="Describe your symptoms for medication suggestions..."
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyPress}
+            disabled={isLoading}
+            className="flex-grow"
+          />
+          <Button 
+            onClick={handleSendMessage}
+            disabled={!input.trim() || isLoading}
+            className="bg-healSmart-blue hover:bg-blue-700"
+          >
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send size={18} />}
+          </Button>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Ask about symptoms to get medication recommendations and dosage information.
+        </p>
+      </CardContent>
     </div>
   );
 };

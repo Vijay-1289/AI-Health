@@ -63,25 +63,37 @@ const NearbyHospitals = () => {
       const request = {
         location: new google.maps.LatLng(location.lat, location.lng),
         radius: 5000, // 5km radius
-        type: 'hospital'
+        type: 'hospital',
+        keyword: 'hospital'
       };
 
       service.nearbySearch(request, (results, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          const hospitals = results.map((place, index) => ({
-            id: place.place_id || String(index),
-            name: place.name || 'Unknown Hospital',
-            address: place.vicinity || 'Address not available',
-            city: 'Andhra Pradesh',
-            phone: 'Contact for details',
-            location: {
-              lat: place.geometry?.location?.lat() || 0,
-              lng: place.geometry?.location?.lng() || 0
-            },
-            distance: place.distance ? `${(place.distance / 1000).toFixed(1)} km` : undefined
-          }));
+          const hospitals = results.map((place, index) => {
+            // Calculate distance
+            const distance = google.maps.geometry.spherical.computeDistanceBetween(
+              new google.maps.LatLng(location.lat, location.lng),
+              place.geometry?.location || new google.maps.LatLng(0, 0)
+            );
+
+            return {
+              id: place.place_id || String(index),
+              name: place.name || 'Unknown Hospital',
+              address: place.vicinity || 'Address not available',
+              city: 'Andhra Pradesh',
+              phone: 'Contact for details',
+              location: {
+                lat: place.geometry?.location?.lat() || 0,
+                lng: place.geometry?.location?.lng() || 0
+              },
+              distance: `${(distance / 1000).toFixed(1)} km`
+            };
+          });
 
           setNearbyHospitals(hospitals);
+        } else {
+          console.error('Places API error:', status);
+          toast.error('No hospitals found nearby. Please try again later.');
         }
         setIsLoading(false);
       });
@@ -152,6 +164,10 @@ const NearbyHospitals = () => {
           {isLoading ? (
             <div className="flex justify-center items-center py-8">
               <div className="animate-spin h-8 w-8 border-4 border-healSmart-blue border-t-transparent rounded-full"></div>
+            </div>
+          ) : nearbyHospitals.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600">No hospitals found nearby. Please try again later.</p>
             </div>
           ) : (
             <div className="space-y-4">
